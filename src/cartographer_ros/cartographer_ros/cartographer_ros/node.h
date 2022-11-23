@@ -132,7 +132,7 @@ class Node {
   double Euro_distance = 0;
   std::vector<std::string> vTimeStamps;
   int TimeStampid = 0;
- void LoadTimeStampe(const std::string& filename);
+  void LoadTimeStampe(const std::string& filename);
   /////////////////////////add by lmf
   double  Total_distance = 0;
 

@@ -667,7 +667,7 @@ SensorBridge* MapBuilderBridge::sensor_bridge(const int trajectory_id) {
  */
 void MapBuilderBridge::OnLocalSlamResult(
     const int trajectory_id, const ::cartographer::common::Time time,
-    const Rigid3d local_pose,
+    const Rigid3d local_pose,//
     ::cartographer::sensor::RangeData range_data_in_local) {
   std::shared_ptr<const LocalTrajectoryData::LocalSlamData> local_slam_data =
       std::make_shared<LocalTrajectoryData::LocalSlamData>(

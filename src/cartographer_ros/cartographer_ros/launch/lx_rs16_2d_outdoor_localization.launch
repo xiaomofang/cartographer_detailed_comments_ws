@@ -21,7 +21,7 @@
   <arg name="load_state_filename" default="$(env HOME)/carto_ws/map/2d-1.pbstream"/>
 
   <!-- 使用bag的时间戳 -->
-  <param name="/use_sim_time" value="true" />
+  <param name="/use_sim_time" value="false" />
 
   <!-- 启动cartographer -->
   <node name="cartographer_node" pkg="cartographer_ros"

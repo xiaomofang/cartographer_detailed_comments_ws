@@ -15,7 +15,7 @@
 -->
 
 <launch>
-  <param name="/use_sim_time" value="true" />
+  <param name="/use_sim_time" value="false" />
 
   <param name="robot_description"
     textfile="$(find cartographer_ros)/urdf/backpack_2d.urdf" />
@@ -29,7 +29,9 @@
           -configuration_basename backpack_2d_localization.lua
           -load_state_filename $(arg load_state_filename)"
       output="screen">
-    <remap from="echoes" to="horizontal_laser_2d" />
+    <!--<remap from="echoes" to="horizontal_laser_2d" />-->
+    <!--<remap from="scan" to="pcl_output" />-->
+    <remap from="points2" to="pcl_output" />
   </node>
 
   <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"

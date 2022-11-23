@@ -585,7 +585,7 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
 
          //bool bematched = (vTimeStamps[TimeStampid] == timestring);
          bool bematched = false;
-         std::string txt_filename4 = "/home/lmf/pcd&traj/sec_pcd_time_stamp.txt";
+         std::string txt_filename4 = "/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/scandata/";
          std::ofstream spoutf(txt_filename4, std::ios::app);
          for(auto timestamp:vTimeStamps){
           //  std::cout<<"timestring:"<<timestring<<"double_value:"<<stod(timestring)<<std::endl;
@@ -629,15 +629,16 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
                                node_options_.map_frame,
                                // 将雷达坐标系下的点云转换成地图坐标系下的点云
                                carto::sensor::TransformTimedPointCloud(
-                                       point_cloud, trajectory_data.local_to_map.cast<float>()));
+                                       point_cloud, trajectory_data.local_slam_data->local_pose.inverse().cast<float>()));
 
 
 
               //  LOG(INFO) << "Saving map to pcd files ...";
                 pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_point_cloud_map(new pcl::PointCloud<pcl::PointXYZ>());
                 pcl::fromROSMsg(ros_point_cloud_tosave, *pcl_point_cloud_map);
-                pcl::io::savePCDFileASCII("/home/lmf/pcd&traj/pcd/"+std::to_string(pose_msg.header.stamp.toSec())+".pcd" , *pcl_point_cloud_map);
-                LOG(INFO) << "Pcd written to " << "/home/lmf/pcd&traj/pcd/"+std::to_string(pose_msg.header.stamp.toSec()) << ".pcd";
+                string filepath = "/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/scandata/";
+                pcl::io::savePCDFileASCII(filepath+std::to_string(pose_msg.header.stamp.toSec())+".pcd" , *pcl_point_cloud_map);
+                LOG(INFO) << "Pcd written to " << filepath+std::to_string(pose_msg.header.stamp.toSec()) << ".pcd";
                 // pcl::io::savePCDFileASCII("/home/lmf/pcd&traj/pcd/"+timestring+".pcd" , *pcl_point_cloud_map);
                 // LOG(INFO) << "Pcd written to " << "/home/lmf/pcd&traj/pcd/"+timestring << ".pcd";
                //  add by lmf
@@ -714,7 +715,7 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
 void Node::LoadTimeStampe(const std::string& _filename)
 {
 
-    std::string fileName ="/home/lmf/pcd&traj/time_stamp.txt";
+    std::string fileName ="/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/scandata/sel_time_stamp.txt";
     std::ifstream loadFile(fileName,std::ios::in);
     if (!loadFile) {
         std::cout<<"Load Failed"<<std::endl;

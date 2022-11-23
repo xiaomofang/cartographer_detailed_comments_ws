@@ -5,3 +5,4 @@ devel_isolated/
 install_isolated/
 *~
 src/CMakeLists.txt
+/scandata/
