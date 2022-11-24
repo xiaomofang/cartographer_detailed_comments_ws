@@ -124,7 +124,7 @@ class Node {
   ::ros::NodeHandle* node_handle();
 
   //zhanglei add
-  bool SaveRange = true;
+  bool SaveRange = false;  //默认不保存激光帧
   double current_x = 0;
   double current_y = 0;
   double last_x = 0;

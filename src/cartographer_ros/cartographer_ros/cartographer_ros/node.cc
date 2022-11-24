@@ -585,7 +585,7 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
 
          //bool bematched = (vTimeStamps[TimeStampid] == timestring);
          bool bematched = false;
-         std::string txt_filename4 = "/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/scandata/";
+         std::string txt_filename4 = "/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/scandata";
          std::ofstream spoutf(txt_filename4, std::ios::app);
          for(auto timestamp:vTimeStamps){
           //  std::cout<<"timestring:"<<timestring<<"double_value:"<<stod(timestring)<<std::endl;
