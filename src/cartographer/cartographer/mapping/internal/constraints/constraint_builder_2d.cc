@@ -107,6 +107,9 @@ void ConstraintBuilder2D::MaybeAddConstraint(
     return;
   }
 
+
+//TODO : lock???
+
   absl::MutexLock locker(&mutex_);
   // 当when_done_正在处理任务时调用本函数, 报个警告
   if (when_done_) {
@@ -116,7 +119,13 @@ void ConstraintBuilder2D::MaybeAddConstraint(
 
   // 在队列中新建一个指向Constraint数据的指针
   constraints_.emplace_back();
+
+  // TODO :  Constraint type::  std::deque<std::unique_ptr<Constraint>>
+  // std::deque  ??
   kQueueLengthMetric->Set(constraints_.size());
+
+  //type ::  metrics::Gauge::Null();
+  //TODO : metrics??
   auto* const constraint = &constraints_.back();
   
   // 为子图新建一个匹配器
@@ -125,6 +134,8 @@ void ConstraintBuilder2D::MaybeAddConstraint(
 
   // 生成个计算约束的任务
   auto constraint_task = absl::make_unique<common::Task>();
+
+  // TODO  ::  kanbudong LOCKS_EXCLUDED(mutex_)
   constraint_task->SetWorkItem([=]() LOCKS_EXCLUDED(mutex_) {
     ComputeConstraint(submap_id, submap, node_id, false, /* match_full_submap */
                       constant_data, initial_relative_pose, *scan_matcher,
@@ -295,18 +306,22 @@ void ConstraintBuilder2D::ComputeConstraint(
   // param: min_score 对局部子图进行回环检测时的最低分数阈值
 
   // Step:2 使用基于分支定界算法的匹配器进行粗匹配
-  if (match_full_submap) {
+  if (match_full_submap) {    //
     // 节点与全地图进行匹配
     kGlobalConstraintsSearchedMetric->Increment();
-    if (submap_scan_matcher.fast_correlative_scan_matcher->MatchFullSubmap(
-            constant_data->filtered_gravity_aligned_point_cloud,
-            options_.global_localization_min_score(), &score, &pose_estimate)) {
+    if (
+            submap_scan_matcher.fast_correlative_scan_matcher->MatchFullSubmap
+            (constant_data->filtered_gravity_aligned_point_cloud,
+            options_.global_localization_min_score(), &score, &pose_estimate)
+            )
+    {
       CHECK_GT(score, options_.global_localization_min_score());
       CHECK_GE(node_id.trajectory_id, 0);
       CHECK_GE(submap_id.trajectory_id, 0);
       kGlobalConstraintsFoundMetric->Increment();
       kGlobalConstraintScoresMetric->Observe(score);
-    } else {
+    }
+    else {
       // 计算失败了就退出
       return;
     }

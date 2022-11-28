@@ -359,6 +359,8 @@ bool FastCorrelativeScanMatcher2D::MatchWithSearchParameters(
                            initial_pose_estimate.translation().y()));
   
   // 缩小搜索窗口的大小, 计算每一帧点云在保证最后一个点能在地图范围内时的最大移动范围
+
+  //TODO :: 这一个函数的作用没有理解
   search_parameters.ShrinkToFit(discrete_scans, limits_.cell_limits());
 
   // 计算最低分辨率中的所有的候选解 最低分辨率是通过搜索树的层数、地图的分辨率计算出来的.

@@ -69,6 +69,7 @@ class ConstraintBuilder2D {
 
   ConstraintBuilder2D(const ConstraintBuilder2D&) = delete;
   ConstraintBuilder2D& operator=(const ConstraintBuilder2D&) = delete;
+  //只是在submap_id的子图与node_id的compressed_point_cloud互相匹配
 
   // Schedules exploring a new constraint between 'submap' identified by
   // 'submap_id', and the 'compressed_point_cloud' for 'node_id'. The
@@ -76,6 +77,8 @@ class ConstraintBuilder2D {
   //
   // The pointees of 'submap' and 'compressed_point_cloud' must stay valid until
   // all computations are finished.
+
+  // 两个接口，在PoseGraph2D中调用，一个是有初始位姿，一个是没有初始位姿
   void MaybeAddConstraint(const SubmapId& submap_id, const Submap2D* submap,
                           const NodeId& node_id,
                           const TrajectoryNode::Data* const constant_data,
@@ -110,9 +113,14 @@ class ConstraintBuilder2D {
  private:
   // FastCorrelativeScanMatcher2D的对象
   struct SubmapScanMatcher {
+    // submap的网格数据
     const Grid2D* grid = nullptr;
+    //分支定界搜索类
+
+    //unique_ptr 建立所有权：该指针指向对象不可以更变
     std::unique_ptr<scan_matching::FastCorrelativeScanMatcher2D>
         fast_correlative_scan_matcher;
+    //TODO： weak_ptr ?
     std::weak_ptr<common::Task> creation_task_handle;
   };
 
