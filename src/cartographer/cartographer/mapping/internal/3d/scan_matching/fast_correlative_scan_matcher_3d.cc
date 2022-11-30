@@ -147,19 +147,30 @@ std::unique_ptr<FastCorrelativeScanMatcher3D::Result>
 FastCorrelativeScanMatcher3D::MatchFullSubmap(
     const Eigen::Quaterniond& global_node_rotation,
     const Eigen::Quaterniond& global_submap_rotation,
-    const TrajectoryNode::Data& constant_data, const float min_score) const {
-  float max_point_distance = 0.f;
-  for (const sensor::RangefinderPoint& point :
-       constant_data.high_resolution_point_cloud) {
-    max_point_distance = std::max(max_point_distance, point.position.norm());
-  }
+    const TrajectoryNode::Data& constant_data, const float min_score)
+    const
+    {
+    //计算出该帧点云中距离最远点
+    float max_point_distance = 0.f;
+    for (const sensor::RangefinderPoint& point :
+        constant_data.high_resolution_point_cloud) {
+        max_point_distance = std::max(max_point_distance, point.position.norm());
+    }
+
+
+  //计算搜索窗口大小()
+  //width_in_voxels grid.size()
   const int linear_window_size =
       (width_in_voxels_ + 1) / 2 +
       common::RoundToInt(max_point_distance / resolution_ + 0.5f);
+
   const auto low_resolution_matcher = scan_matching::CreateLowResolutionMatcher(
       low_resolution_hybrid_grid_, &constant_data.low_resolution_point_cloud);
+
   const SearchParameters search_parameters{
       linear_window_size, linear_window_size, M_PI, &low_resolution_matcher};
+
+
   return MatchWithSearchParameters(
       search_parameters,
       transform::Rigid3f::Rotation(global_node_rotation.cast<float>()),
@@ -177,6 +188,7 @@ FastCorrelativeScanMatcher3D::MatchWithSearchParameters(
     const sensor::PointCloud& point_cloud,
     const Eigen::VectorXf& rotational_scan_matcher_histogram,
     const Eigen::Quaterniond& gravity_alignment, const float min_score) const {
+
   // 离散化点云，这里通过直方图匹配滤掉了一部分候选scan
   const std::vector<DiscreteScan3D> discrete_scans = GenerateDiscreteScans(
       search_parameters, point_cloud, rotational_scan_matcher_histogram,
@@ -250,7 +262,9 @@ std::vector<DiscreteScan3D> FastCorrelativeScanMatcher3D::GenerateDiscreteScans(
     const Eigen::VectorXf& rotational_scan_matcher_histogram,
     const Eigen::Quaterniond& gravity_alignment,
     const transform::Rigid3f& global_node_pose,
-    const transform::Rigid3f& global_submap_pose) const {
+    const transform::Rigid3f& global_submap_pose)
+
+const{
   std::vector<DiscreteScan3D> result;
   // We set this value to something on the order of resolution to make sure that
   // the std::acos() below is defined.
@@ -259,26 +273,35 @@ std::vector<DiscreteScan3D> FastCorrelativeScanMatcher3D::GenerateDiscreteScans(
     const float range = point.position.norm();
     max_scan_range = std::max(range, max_scan_range);
   }
+
   const float kSafetyMargin = 1.f - 1e-2f;
   const float angular_step_size =
       kSafetyMargin * std::acos(1.f - common::Pow2(resolution_) /
                                           (2.f * common::Pow2(max_scan_range)));
+
   const int angular_window_size = common::RoundToInt(
       search_parameters.angular_search_window / angular_step_size);
+
   std::vector<float> angles;
   for (int rz = -angular_window_size; rz <= angular_window_size; ++rz) {
     angles.push_back(rz * angular_step_size);
   }
+
   const transform::Rigid3f node_to_submap =
       global_submap_pose.inverse() * global_node_pose;
+
+
   // 旋转直方图匹配
   const std::vector<float> scores = rotational_scan_matcher_.Match(
       rotational_scan_matcher_histogram,
       transform::GetYaw(node_to_submap.rotation() *
                         gravity_alignment.inverse().cast<float>()),
       angles);
+
   for (size_t i = 0; i != angles.size(); ++i) {
-    // 通过阈值过滤掉一些角度
+
+
+    // 通过直方图匹配的得分阈值过滤掉一些角度
     if (scores[i] < options_.min_rotational_score()) {
       continue;
     }

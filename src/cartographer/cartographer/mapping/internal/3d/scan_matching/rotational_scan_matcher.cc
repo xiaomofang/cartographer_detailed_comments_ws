@@ -34,11 +34,13 @@ constexpr float kSliceHeight = 0.2f;
 
 // 根据角度作为索引, 将value加入到直方图中进行累加
 void AddValueToHistogram(float angle, const float value,
-                         Eigen::VectorXf* histogram) {
+                         Eigen::VectorXf* histogram){
   // Map the angle to [0, pi), i.e. a vector and its inverse are considered to
   // represent the same angle.
+
   // 将角度映射到 [0, pi), 即向量及其逆被视为表示相同的角度
-  while (angle > static_cast<float>(M_PI)) {
+  while (angle > static_cast<float>(M_PI))
+  {
     angle -= static_cast<float>(M_PI);
   }
   while (angle < 0.f) {
@@ -47,9 +49,12 @@ void AddValueToHistogram(float angle, const float value,
   // [0, 1)
   const float zero_to_one = angle / static_cast<float>(M_PI);
   // 角度对应直方图的索引
+
+
+  // TODO:: Clamp
   const int bucket = common::Clamp<int>(
       common::RoundToInt(histogram->size() * zero_to_one - 0.5f), 0,
-      histogram->size() - 1);
+      histogram->size() - 1);  //  四舍五入
   // 直方图元素即为权重的累加值
   (*histogram)(bucket) += value;
 }
@@ -80,8 +85,10 @@ void AddPointCloudSliceToHistogram(const sensor::PointCloud& slice,
   for (const sensor::RangefinderPoint& point : slice) {
     const Eigen::Vector2f delta =
         (point.position - last_point_position).head<2>();
+
     const Eigen::Vector2f direction = (point.position - centroid).head<2>();
     const float distance = delta.norm();
+
     if (distance < kMinDistance || direction.norm() < kMinDistance) {
       continue;
     }
@@ -106,6 +113,7 @@ void AddPointCloudSliceToHistogram(const sensor::PointCloud& slice,
 // the data.
 // 将点云中的每个点与质心连线与x的夹角进行排序
 sensor::PointCloud SortSlice(const sensor::PointCloud& slice) {
+
   struct SortableAnglePointPair {
     bool operator<(const SortableAnglePointPair& rhs) const {
       return angle < rhs.angle;
@@ -115,6 +123,8 @@ sensor::PointCloud SortSlice(const sensor::PointCloud& slice) {
     sensor::RangefinderPoint point;
   };
   // 计算这帧点云坐标的平均值
+
+
   const Eigen::Vector3f centroid = ComputeCentroid(slice);
   std::vector<SortableAnglePointPair> by_angle;
   by_angle.reserve(slice.size());
@@ -137,7 +147,8 @@ sensor::PointCloud SortSlice(const sensor::PointCloud& slice) {
 
 // 计算两个直方图的余弦距离 即相似程度
 float MatchHistograms(const Eigen::VectorXf& submap_histogram,
-                      const Eigen::VectorXf& scan_histogram) {
+                      const Eigen::VectorXf& scan_histogram)
+{
   // We compute the dot product of normalized histograms as a measure of
   // similarity.
   // 我们计算归一化直方图的点积作为相似度的度量
@@ -160,17 +171,24 @@ RotationalScanMatcher::RotationalScanMatcher(const Eigen::VectorXf* histogram)
 // rotations of a fractional bucket which is handled by linearly interpolating.
 // 将给定的直方图旋转给定的角度
 Eigen::VectorXf RotationalScanMatcher::RotateHistogram(
-    const Eigen::VectorXf& histogram, const float angle) {
+    const Eigen::VectorXf& histogram, const float angle)
+    {
+  //  如果直方图为空，则退回
   if (histogram.size() == 0) {
     return histogram;
   }
+
+
   const float rotate_by_buckets = -angle * histogram.size() / M_PI;
-  int full_buckets = common::RoundToInt(rotate_by_buckets - 0.5f);
-  const float fraction = rotate_by_buckets - full_buckets;
+  int full_buckets = common::RoundToInt(rotate_by_buckets - 0.5f); //对应角度在直方图上的index
+  const float fraction = rotate_by_buckets - full_buckets;   //fraction 对应四舍五入过程中误差
+
   CHECK_GT(histogram.size(), 0);
   while (full_buckets < 0) {
     full_buckets += histogram.size();
   }
+
+
   Eigen::VectorXf rotated_histogram_0 = Eigen::VectorXf::Zero(histogram.size());
   Eigen::VectorXf rotated_histogram_1 = Eigen::VectorXf::Zero(histogram.size());
   for (int i = 0; i != histogram.size(); ++i) {
@@ -186,6 +204,7 @@ Eigen::VectorXf RotationalScanMatcher::RotateHistogram(
 // 计算点云的直方图
 Eigen::VectorXf RotationalScanMatcher::ComputeHistogram(
     const sensor::PointCloud& point_cloud, const int histogram_size) {
+
   Eigen::VectorXf histogram = Eigen::VectorXf::Zero(histogram_size);
   // 将输入点云按照Z轴的高度切成n个切片
   std::map<int, sensor::PointCloud> slices;
@@ -206,6 +225,7 @@ std::vector<float> RotationalScanMatcher::Match(
     const std::vector<float>& angles) const {
   std::vector<float> result;
   result.reserve(angles.size());
+
   for (const float angle : angles) {
     // 将直方图进行旋转
     const Eigen::VectorXf scan_histogram =

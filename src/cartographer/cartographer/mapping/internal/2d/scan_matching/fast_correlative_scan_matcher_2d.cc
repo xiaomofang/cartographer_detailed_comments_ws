@@ -391,7 +391,7 @@ bool FastCorrelativeScanMatcher2D::MatchWithSearchParameters(
 std::vector<Candidate2D>
 FastCorrelativeScanMatcher2D::ComputeLowestResolutionCandidates(
     const std::vector<DiscreteScan2D>& discrete_scans,
-    const SearchParameters& search_parameters) const {
+    const SearchParameters& search_parameters) const{
 
   // 生成最低分辨率层(栅格最粗)上的所有候选解
   std::vector<Candidate2D> lowest_resolution_candidates =
@@ -454,7 +454,7 @@ FastCorrelativeScanMatcher2D::GenerateLowestResolutionCandidates(
   return candidates;
 }
 
-// 对所有的候选解进行评分并进行降序排序
+// 对所有的候选解进行评分并  进行降序排序
 void FastCorrelativeScanMatcher2D::ScoreCandidates(
     const PrecomputationGrid2D& precomputation_grid,
     const std::vector<DiscreteScan2D>& discrete_scans,
