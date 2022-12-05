@@ -187,7 +187,7 @@ ConstraintBuilder3D::DispatchScanMatcherConstruction(const SubmapId& submap_id,
   scan_matcher_task->SetWorkItem(
       [&submap_scan_matcher, &scan_matcher_options, histogram]() {
         submap_scan_matcher.fast_correlative_scan_matcher =
-            absl::make_unique<scan_matching::FastCorrelativeScanMatcher3D>(
+            absl::make_unique<scan_matching::FastCorrelativeScanMatcher3D>(   //Matcher 在这里进行初始化
                 *submap_scan_matcher.high_resolution_hybrid_grid,
                 submap_scan_matcher.low_resolution_hybrid_grid, histogram,
                 scan_matcher_options);
@@ -197,27 +197,35 @@ ConstraintBuilder3D::DispatchScanMatcherConstruction(const SubmapId& submap_id,
   return &submap_scan_matchers_.at(submap_id);
 }
 
+
+//函數入口
 void ConstraintBuilder3D::ComputeConstraint(
-    const SubmapId& submap_id, const NodeId& node_id, bool match_full_submap,
+    const SubmapId& submap_id, const NodeId& node_id,
+    bool match_full_submap,
     const TrajectoryNode::Data* const constant_data,
     const transform::Rigid3d& global_node_pose,
     const transform::Rigid3d& global_submap_pose,
     const SubmapScanMatcher& submap_scan_matcher,
     std::unique_ptr<Constraint>* constraint) {
+
   CHECK(submap_scan_matcher.fast_correlative_scan_matcher);
   // The 'constraint_transform' (submap i <- node j) is computed from:
   // - a 'high_resolution_point_cloud' in node j and
   // - the initial guess 'initial_pose' (submap i <- node j).
   std::unique_ptr<scan_matching::FastCorrelativeScanMatcher3D::Result>
       match_result;
+  // 3D没有对于initial pose的处理
+  // 在初始化result 后直接进行matcth
 
   // Compute 'pose_estimate' in three stages:
   // 1. Fast estimate using the fast correlative scan matcher.
   // 2. Prune if the score is too low.
   // 3. Refine.
+
   if (match_full_submap) {
-    kGlobalConstraintsSearchedMetric->Increment();
+    kGlobalConstraintsSearchedMetric->Increment();  //TODO : ???
     match_result =
+// 函數在這個入口進入
         submap_scan_matcher.fast_correlative_scan_matcher->MatchFullSubmap(
             global_node_pose.rotation(), global_submap_pose.rotation(),
             *constant_data, options_.global_localization_min_score());

@@ -104,6 +104,7 @@ void AddPointCloudSliceToHistogram(const sensor::PointCloud& slice,
     // 因此权重应该降低
     const float value = std::max(
         0.f, 1.f - std::abs(delta.normalized().dot(direction.normalized())));
+
     AddValueToHistogram(angle, value, histogram);
   }
 }
@@ -230,7 +231,8 @@ std::vector<float> RotationalScanMatcher::Match(
     // 将直方图进行旋转
     const Eigen::VectorXf scan_histogram =
         RotateHistogram(histogram, initial_angle + angle);
-    // 计算两个直方图向量的夹角cos值
+    // yaw
+    // 计算两个直方图向量的夹角cos值-表征相似度
     result.push_back(MatchHistograms(*histogram_, scan_histogram));
   }
   return result;

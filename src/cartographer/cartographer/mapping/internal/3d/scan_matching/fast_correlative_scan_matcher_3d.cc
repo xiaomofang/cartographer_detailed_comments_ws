@@ -157,26 +157,33 @@ FastCorrelativeScanMatcher3D::MatchFullSubmap(
         max_point_distance = std::max(max_point_distance, point.position.norm());
     }
 
-
-  //计算搜索窗口大小()
+  //计算搜索窗口大小(柵格层面)
   //width_in_voxels grid.size()
   const int linear_window_size =
       (width_in_voxels_ + 1) / 2 +
       common::RoundToInt(max_point_distance / resolution_ + 0.5f);
 
+    //TODO : 这里有一个疑问，下面这个函数的
+    // return [=](const transform::Rigid3f& pose){ }
+    // 它的返回类型应该是一个姿态的数据，但是其内部的操作却是将这个pose作为初始参数，然后对这个参数进行打分
   const auto low_resolution_matcher = scan_matching::CreateLowResolutionMatcher(
       low_resolution_hybrid_grid_, &constant_data.low_resolution_point_cloud);
 
+  //这个就是将所计算出来的参数，打包并到search-parameters中
   const SearchParameters search_parameters{
       linear_window_size, linear_window_size, M_PI, &low_resolution_matcher};
 
 
+  //通过这个函数，将所有的参数传入，并且进行match，这里将直方图参数调用进来
+  //直方图是已经计算算好的，函数：
+  // Laser :: ComputeHistogram
+  //submap ：Submap3D::InsertData
   return MatchWithSearchParameters(
       search_parameters,
       transform::Rigid3f::Rotation(global_node_rotation.cast<float>()),
       transform::Rigid3f::Rotation(global_submap_rotation.cast<float>()),
       constant_data.high_resolution_point_cloud,
-      constant_data.rotational_scan_matcher_histogram,
+      constant_data.rotational_scan_matcher_histogram,    //histogram 第一次出现
       constant_data.gravity_alignment, min_score);
 }
 
@@ -190,16 +197,28 @@ FastCorrelativeScanMatcher3D::MatchWithSearchParameters(
     const Eigen::Quaterniond& gravity_alignment, const float min_score) const {
 
   // 离散化点云，这里通过直方图匹配滤掉了一部分候选scan
+  // DiscreteScan3D.cell_indices_per_depth  保存了地图中每个点的坐标
   const std::vector<DiscreteScan3D> discrete_scans = GenerateDiscreteScans(
       search_parameters, point_cloud, rotational_scan_matcher_histogram,
       gravity_alignment, global_node_pose, global_submap_pose);
 
+  //在这里，已经将所有候选解（粗糙状态）进行打分
   const std::vector<Candidate3D> lowest_resolution_candidates =
       ComputeLowestResolutionCandidates(search_parameters, discrete_scans);
+
+
+  // Main !!!
+  //In :  search_paramters
+  //In :  discrete_scans
+  //In :  lowest_resoulution_candidates
+  //In :  max_depth
+  //In :  min_score
+  //Out:  best_candidate
 
   const Candidate3D best_candidate = BranchAndBound(
       search_parameters, discrete_scans, lowest_resolution_candidates,
       precomputation_grid_stack_->max_depth(), min_score);
+
   if (best_candidate.score > min_score) {
     return absl::make_unique<Result>(Result{
         best_candidate.score,
@@ -213,49 +232,61 @@ FastCorrelativeScanMatcher3D::MatchWithSearchParameters(
 DiscreteScan3D FastCorrelativeScanMatcher3D::DiscretizeScan(
     const FastCorrelativeScanMatcher3D::SearchParameters& search_parameters,
     const sensor::PointCloud& point_cloud, const transform::Rigid3f& pose,
-    const float rotational_score) const {
+    const float rotational_score)
+const {
   std::vector<std::vector<Eigen::Array3i>> cell_indices_per_depth;
   const PrecomputationGrid3D& original_grid =
       precomputation_grid_stack_->Get(0);
   std::vector<Eigen::Array3i> full_resolution_cell_indices;
+
+
+  //获取到旋转后的点云数据在栅格中的坐标
   for (const sensor::RangefinderPoint& point :
-       sensor::TransformPointCloud(point_cloud, pose)) {
+       sensor::TransformPointCloud(point_cloud, pose))
+  {
     full_resolution_cell_indices.push_back(
         original_grid.GetCellIndex(point.position));
   }
+
   const int full_resolution_depth = std::min(options_.full_resolution_depth(),
                                              options_.branch_and_bound_depth());
+
   CHECK_GE(full_resolution_depth, 1);
   for (int i = 0; i != full_resolution_depth; ++i) {
-    cell_indices_per_depth.push_back(full_resolution_cell_indices);
+    cell_indices_per_depth.push_back(full_resolution_cell_indices);  //将perdepth中初始化每个都是高分辨率
   }
   const int low_resolution_depth =
-      options_.branch_and_bound_depth() - full_resolution_depth;
+      options_.branch_and_bound_depth() - full_resolution_depth;  //多分辨率操作
+
+
   CHECK_GE(low_resolution_depth, 0);
   const Eigen::Array3i search_window_start(
       -search_parameters.linear_xy_window_size,
       -search_parameters.linear_xy_window_size,
       -search_parameters.linear_z_window_size);
+
+
   for (int i = 0; i != low_resolution_depth; ++i) {
     const int reduction_exponent = i + 1;
     const Eigen::Array3i low_resolution_search_window_start(
-        search_window_start[0] >> reduction_exponent,
+        search_window_start[0] >> reduction_exponent,   //将数据左移，实质是除以2,目的是将高分辨率地图进行粗糙化
         search_window_start[1] >> reduction_exponent,
         search_window_start[2] >> reduction_exponent);
     cell_indices_per_depth.emplace_back();
     for (const Eigen::Array3i& cell_index : full_resolution_cell_indices) {
-      const Eigen::Array3i cell_at_start = cell_index + search_window_start;
+      const Eigen::Array3i cell_at_start = cell_index + search_window_start;  //将高分辨率地图中每一个点进行偏移
       const Eigen::Array3i low_resolution_cell_at_start(
-          cell_at_start[0] >> reduction_exponent,
+          cell_at_start[0] >> reduction_exponent,   //粗糙化，同上
           cell_at_start[1] >> reduction_exponent,
           cell_at_start[2] >> reduction_exponent);
       cell_indices_per_depth.back().push_back(
-          low_resolution_cell_at_start - low_resolution_search_window_start);
+          low_resolution_cell_at_start - low_resolution_search_window_start); //将粗糙化的点，加入到里面
     }
   }
   return DiscreteScan3D{pose, cell_indices_per_depth, rotational_score};
+  //cell_indices_per_depth：Contains a vector of discretized scans for each 'depth'
 }
-
+//离散化点云，这里通过直方图匹配滤掉了一部分候选scan
 std::vector<DiscreteScan3D> FastCorrelativeScanMatcher3D::GenerateDiscreteScans(
     const FastCorrelativeScanMatcher3D::SearchParameters& search_parameters,
     const sensor::PointCloud& point_cloud,
@@ -268,21 +299,19 @@ const{
   std::vector<DiscreteScan3D> result;
   // We set this value to something on the order of resolution to make sure that
   // the std::acos() below is defined.
+  //计算点云最远距离
   float max_scan_range = 3.f * resolution_;
   for (const sensor::RangefinderPoint& point : point_cloud) {
     const float range = point.position.norm();
     max_scan_range = std::max(range, max_scan_range);
   }
-
   const float kSafetyMargin = 1.f - 1e-2f;
-  const float angular_step_size =
+  const float angular_step_size =  //角度搜索窗口step
       kSafetyMargin * std::acos(1.f - common::Pow2(resolution_) /
                                           (2.f * common::Pow2(max_scan_range)));
-
   const int angular_window_size = common::RoundToInt(
       search_parameters.angular_search_window / angular_step_size);
-
-  std::vector<float> angles;
+  std::vector<float> angles;   //待定角度搜索window
   for (int rz = -angular_window_size; rz <= angular_window_size; ++rz) {
     angles.push_back(rz * angular_step_size);
   }
@@ -291,7 +320,7 @@ const{
       global_submap_pose.inverse() * global_node_pose;
 
 
-  // 旋转直方图匹配
+  // 旋转直方图匹配--返回每个angle 对应的直方图旋转相似程度（score）
   const std::vector<float> scores = rotational_scan_matcher_.Match(
       rotational_scan_matcher_histogram,
       transform::GetYaw(node_to_submap.rotation() *
@@ -312,8 +341,10 @@ const{
     const transform::Rigid3f pose(
         node_to_submap.translation(),
         global_submap_pose.rotation().inverse() *
-            transform::AngleAxisVectorToRotationQuaternion(angle_axis) *
+            transform::AngleAxisVectorToRotationQuaternion(angle_axis) *  //这里只是修改了yaw轴坐标
             global_node_pose.rotation());
+
+
     // 保存不同角度的点云离散后的坐标
     result.push_back(
         DiscretizeScan(search_parameters, point_cloud, pose, scores[i]));
@@ -386,8 +417,10 @@ FastCorrelativeScanMatcher3D::ComputeLowestResolutionCandidates(
     const FastCorrelativeScanMatcher3D::SearchParameters& search_parameters,
     const std::vector<DiscreteScan3D>& discrete_scans) const {
   std::vector<Candidate3D> lowest_resolution_candidates =
-      GenerateLowestResolutionCandidates(search_parameters,
+// 离散化XYZ坐标
+  GenerateLowestResolutionCandidates(search_parameters,
                                          discrete_scans.size());
+//将每一帧旋转后的points 配合上上面计算出的XYZ offset，最终打出一个最粗糙的初始解
   ScoreCandidates(precomputation_grid_stack_->max_depth(), discrete_scans,
                   &lowest_resolution_candidates);
   return lowest_resolution_candidates;
@@ -395,7 +428,8 @@ FastCorrelativeScanMatcher3D::ComputeLowestResolutionCandidates(
 
 transform::Rigid3f FastCorrelativeScanMatcher3D::GetPoseFromCandidate(
     const std::vector<DiscreteScan3D>& discrete_scans,
-    const Candidate3D& candidate) const {
+    const Candidate3D& candidate)
+const {
   return transform::Rigid3f::Translation(
              resolution_ * candidate.offset.matrix().cast<float>()) *
          discrete_scans[candidate.scan_index].pose;
@@ -405,7 +439,9 @@ Candidate3D FastCorrelativeScanMatcher3D::BranchAndBound(
     const FastCorrelativeScanMatcher3D::SearchParameters& search_parameters,
     const std::vector<DiscreteScan3D>& discrete_scans,
     const std::vector<Candidate3D>& candidates, const int candidate_depth,
-    float min_score) const {
+    float min_score)
+// TODO : const for { method }  ???
+const {
   if (candidate_depth == 0) {
     for (const Candidate3D& candidate : candidates) {
       if (candidate.score <= min_score) {
@@ -415,7 +451,7 @@ Candidate3D FastCorrelativeScanMatcher3D::BranchAndBound(
       }
       const float low_resolution_score =
           (*search_parameters.low_resolution_matcher)(
-              GetPoseFromCandidate(discrete_scans, candidate));
+              GetPoseFromCandidate(discrete_scans, candidate)); // ???
       if (low_resolution_score >= options_.min_low_resolution_score()) {
         // We found the best candidate that passes the matching function.
         Candidate3D best_candidate = candidate;
@@ -431,34 +467,39 @@ Candidate3D FastCorrelativeScanMatcher3D::BranchAndBound(
   Candidate3D best_high_resolution_candidate = Candidate3D::Unsuccessful();
   best_high_resolution_candidate.score = min_score;
   for (const Candidate3D& candidate : candidates) {
+      //将初始分数小于阈值的解就剔除了
     if (candidate.score <= min_score) {
       break;
     }
+
     std::vector<Candidate3D> higher_resolution_candidates;
     const int half_width = 1 << (candidate_depth - 1);
+    // 3个if 是为了保证超出搜索界
     for (int z : {0, half_width}) {
       if (candidate.offset.z() + z > search_parameters.linear_z_window_size) {
         break;
       }
       for (int y : {0, half_width}) {
-        if (candidate.offset.y() + y >
-            search_parameters.linear_xy_window_size) {
+        if (candidate.offset.y() + y > search_parameters.linear_xy_window_size) {
           break;
         }
         for (int x : {0, half_width}) {
-          if (candidate.offset.x() + x >
-              search_parameters.linear_xy_window_size) {
+          if (candidate.offset.x() + x > search_parameters.linear_xy_window_size) {
             break;
           }
+
           higher_resolution_candidates.emplace_back(
               candidate.scan_index, candidate.offset + Eigen::Array3i(x, y, z));
         }
       }
     }
+    //对8个剪枝结果进行打分
     ScoreCandidates(candidate_depth - 1, discrete_scans,
                     &higher_resolution_candidates);
+
     best_high_resolution_candidate = std::max(
         best_high_resolution_candidate,
+        // 分支定界通过递归实现
         BranchAndBound(search_parameters, discrete_scans,
                        higher_resolution_candidates, candidate_depth - 1,
                        best_high_resolution_candidate.score));
