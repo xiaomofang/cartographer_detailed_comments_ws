@@ -38,6 +38,8 @@ struct PixelData {
 
 // Filters 'range_data', retaining only the returns that have no more than
 // 'max_range' distance from the origin. Removes misses.
+
+// 滤除掉较远距离的点云点
 sensor::RangeData FilterRangeDataByMaxRange(const sensor::RangeData& range_data,
                                             const float max_range) {
   sensor::RangeData result{range_data.origin, {}, {}};
@@ -194,6 +196,8 @@ proto::SubmapsOptions3D CreateSubmapsOptions3D(
   return options;
 }
 
+
+// submap初始化
 Submap3D::Submap3D(const float high_resolution, const float low_resolution,
                    const transform::Rigid3d& local_submap_pose,
                    const Eigen::VectorXf& rotational_scan_matcher_histogram)
@@ -268,6 +272,8 @@ void Submap3D::ToResponseProto(
                     response->add_textures());
 }
 
+
+// 向点云里面加入数据
 void Submap3D::InsertData(const sensor::RangeData& range_data_in_local,
                           const RangeDataInserter3D& range_data_inserter,
                           const float high_resolution_max_range,

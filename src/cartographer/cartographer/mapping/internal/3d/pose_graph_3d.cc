@@ -275,7 +275,9 @@ void PoseGraph3D::ComputeConstraint(const NodeId& node_id,
         node_time <
             last_connection_time +
                 common::FromSeconds(
-                    options_.global_constraint_search_after_n_seconds())) {
+                    options_.global_constraint_search_after_n_seconds()))
+    //利用这个条件来判断是不是要添加到
+        {
       // If the node and the submap belong to the same trajectory or if there
       // has been a recent global constraint that ties that node's trajectory to
       // the submap's trajectory, it suffices to do a match constrained to a
@@ -328,6 +330,7 @@ WorkItem::Result PoseGraph3D::ComputeConstraintsForNode(
     optimization_problem_->AddTrajectoryNode(
         matching_id.trajectory_id,
         optimization::NodeSpec3D{constant_data->time, local_pose, global_pose});
+
     for (size_t i = 0; i < insertion_submaps.size(); ++i) {
       const SubmapId submap_id = submap_ids[i];
       // Even if this was the last node added to 'submap_id', the submap will
