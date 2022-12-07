@@ -356,10 +356,40 @@ void ConstraintBuilder2D::ComputeConstraint(
   if(pointcloud_sorted.empty()) return;  //  如果处理以后的点云为空，则返回值
 
   const Eigen::Vector3f last_point_position = pointcloud_sorted.points().front().position;
-
+  //  add value to histogram
   for(const auto& point :pointcloud_sorted){
 
+      const Eigen::Vector2f delta = (point.position - last_point_position).head<2>();
+      const float distance = delta.norm();
+
+      const Eigen::Vector2f direction = (point.position-center).head<2>();
+
+      //这个部分主要是用于对distance的滤波，但是之前已经对distance进行max 和 min的筛选了，所以目前先认为他是不必要的
+      //if (distance < kMinDistance || direction.norm() < kMinDistance) {
+      //    continue;
+      //}
+//      if (distance > kMaxDistance) {
+//          last_point_position = point.position;
+//          continue;
+//      }
+
+    float angle = common::atan2(delta);
+    const float value = std::max(0.f,1.f-std::abs(delta.normalized().dot(direction.normalized())));
+
+    while (angle > static_cast<float>(M_PI))
+    {
+        angle -= static_cast<float>(M_PI);
+    }
+
+    while (angle < 0.f){
+        angle += static_cast<float>(M_PI);
+    }
+
+    const float zero_to_one = angle/static_cast<float>(M_PI);
+    const int bucket = common::Clamp<int>(common::RoundToInt(histogram.size()*zero_to_one-0.5f),0,histogram.size()-1);
+    histogram(bucket) += value;
   }
+
 
 
 
