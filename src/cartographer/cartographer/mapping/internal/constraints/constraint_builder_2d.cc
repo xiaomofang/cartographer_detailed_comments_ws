@@ -16,6 +16,7 @@
 
 #include "cartographer/mapping/internal/constraints/constraint_builder_2d.h"
 
+
 #include <cmath>
 #include <functional>
 #include <iomanip>
@@ -306,6 +307,62 @@ void ConstraintBuilder2D::ComputeConstraint(
   // param: min_score 对局部子图进行回环检测时的最低分数阈值
 
   // Step:2 使用基于分支定界算法的匹配器进行粗匹配
+
+  //add by zhanglei
+  //constant_data->scan_matcher_histgram_2d = com
+  ::google::protobuf::int32 rotational_histogram_size_ = 17;  //应该在lua文件中读取的
+  auto histogram_size = rotational_histogram_size_;
+  Eigen::VectorXf histogram = Eigen::VectorXf::Zero(histogram_size);  //初始化histogram ，全部设置为0
+  auto& pointcloud  = constant_data->filtered_gravity_aligned_point_cloud;
+  //auto pointcloud =  SortSlice(constant_data->filtered_gravity_aligned_point_cloud);
+  //cartographer::mapping::scan_matching::AddPointCloudSliceToHistogram(sensor::PointCloud::SortSlice(constant_data->filtered_gravity_aligned_point_cloud), &histogram);
+
+  //
+  struct SortableAnglePointPair{
+      bool operator<(const SortableAnglePointPair & rhs)
+      const{
+            return angle < rhs.angle;
+      };
+
+      float angle;
+      sensor::RangefinderPoint point;
+  };
+
+  Eigen::Vector3f sum = Eigen::Vector3f::Zero();
+        for ( const auto & point:pointcloud) {
+            sum += point.position;
+        }
+
+
+  const Eigen::Vector3f center = sum/static_cast<float>(pointcloud.size());
+  std::vector<SortableAnglePointPair> by_angle;
+  by_angle.reserve(pointcloud.size());
+  for(const auto& point:pointcloud){
+      const Eigen::Vector2f delta = (point.position-center).head<2>();
+      //if(delta.norm()< kMinDistance)
+      // {
+      // continue;
+      // }
+      float angle = common::atan2(delta);
+      by_angle.push_back(SortableAnglePointPair{angle,point});//
+  }
+
+  std::sort(by_angle.begin(),by_angle.end());
+  sensor::PointCloud pointcloud_sorted;
+  for(const auto & pair : by_angle){
+      pointcloud_sorted.push_back(pair.point);
+  }
+
+  if(pointcloud_sorted.empty()) return;  //  如果处理以后的点云为空，则返回值
+
+  const Eigen::Vector3f last_point_position = pointcloud_sorted.points().front().position;
+
+  for(const auto& point :pointcloud_sorted){
+
+  }
+
+
+
   if (match_full_submap) {    //
     // 节点与全地图进行匹配
     kGlobalConstraintsSearchedMetric->Increment();

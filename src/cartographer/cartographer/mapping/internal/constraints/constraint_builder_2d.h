@@ -41,6 +41,9 @@
 #include "cartographer/sensor/internal/voxel_filter.h"
 #include "cartographer/sensor/point_cloud.h"
 
+//zhanglei add
+#include "cartographer/mapping/internal/3d/scan_matching/rotational_scan_matcher.h"
+
 namespace cartographer {
 namespace mapping {
 namespace constraints {

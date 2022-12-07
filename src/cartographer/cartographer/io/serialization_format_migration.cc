@@ -190,7 +190,6 @@ void MigrateStreamVersion1ToVersion2(
     }
   }
 
-  // TODO(schwoere): Remove backwards compatibility once the pbstream format
   // version 2 is established.
   if (deserializer.header().format_version() ==
       kFormatVersionWithoutSubmapHistograms) {

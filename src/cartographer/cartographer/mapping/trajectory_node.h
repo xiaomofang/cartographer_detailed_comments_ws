@@ -64,6 +64,10 @@ struct TrajectoryNode {
 
     // The node pose in the local SLAM frame.
     transform::Rigid3d local_pose;
+
+
+    // Add by zhanglei
+    Eigen::VectorXf scan_matcher_histgram_2d ;
   };
 
   common::Time time() const { return constant_data->time; }

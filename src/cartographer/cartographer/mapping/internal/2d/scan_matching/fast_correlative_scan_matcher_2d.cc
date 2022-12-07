@@ -97,6 +97,7 @@ CreateFastCorrelativeScanMatcherOptions2D(
 }
 
 // 构造不同分辨率的地图
+//TODO :: 理解一下这里面的滑动窗口
 PrecomputationGrid2D::PrecomputationGrid2D(
     const Grid2D& grid, const CellLimits& limits, const int width,
     std::vector<float>* reusable_intermediate_grid)
@@ -391,7 +392,8 @@ bool FastCorrelativeScanMatcher2D::MatchWithSearchParameters(
 std::vector<Candidate2D>
 FastCorrelativeScanMatcher2D::ComputeLowestResolutionCandidates(
     const std::vector<DiscreteScan2D>& discrete_scans,
-    const SearchParameters& search_parameters) const{
+    const SearchParameters& search_parameters)
+    const{
 
   // 生成最低分辨率层(栅格最粗)上的所有候选解
   std::vector<Candidate2D> lowest_resolution_candidates =

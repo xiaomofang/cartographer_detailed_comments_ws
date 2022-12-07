@@ -366,7 +366,7 @@ TEST_P(MapBuilderTestByGridTypeAndDimensions, SaveLoadState) {
           trajectory_id);
   EXPECT_GT(num_constraints, 0);
   EXPECT_GT(num_nodes, 0);
-  // TODO(gaschler): Consider using in-memory to avoid side effects.
+
   const std::string filename = "temp-SaveLoadState.pbstream";
   io::ProtoStreamWriter writer(filename);
   map_builder_->SerializeState(/*include_unfinished_submaps=*/true, &writer);
@@ -444,7 +444,7 @@ TEST_P(MapBuilderTestByGridType, LocalizationOnFrozenTrajectory2D) {
     }
   }
   EXPECT_GE(num_cross_trajectory_constraints, 3);
-  // TODO(gaschler): Subscribe global slam callback, verify that all nodes are
+
   // optimized.
   EXPECT_THAT(constraints, ::testing::Contains(::testing::Field(
                                &PoseGraphInterface::Constraint::tag,
