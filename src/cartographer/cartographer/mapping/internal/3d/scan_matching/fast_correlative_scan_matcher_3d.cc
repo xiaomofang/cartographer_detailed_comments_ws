@@ -59,8 +59,11 @@ PrecomputationGridStack3D::PrecomputationGridStack3D(
     const proto::FastCorrelativeScanMatcherOptions3D& options) {
   CHECK_GE(options.branch_and_bound_depth(), 1);
   CHECK_GE(options.full_resolution_depth(), 1);
-  precomputation_grids_.reserve(options.branch_and_bound_depth());
-  precomputation_grids_.push_back(ConvertToPrecomputationGrid(hybrid_grid));
+
+  precomputation_grids_.reserve(options.branch_and_bound_depth());  //最粗糙的地图由分支定界决定
+  precomputation_grids_.push_back(ConvertToPrecomputationGrid(hybrid_grid));  //将hybrid加入地图
+  //hybrid是最高精度的地图
+
   Eigen::Array3i last_width = Eigen::Array3i::Ones();
   for (int depth = 1; depth != options.branch_and_bound_depth(); ++depth) {
     const bool half_resolution = depth >= options.full_resolution_depth();
@@ -72,6 +75,7 @@ PrecomputationGridStack3D::PrecomputationGridStack3D(
                                  full_voxels_per_high_resolution_voxel;
     precomputation_grids_.push_back(
         PrecomputeGrid(precomputation_grids_.back(), half_resolution, shift));
+    //在PrecomputedGrid中进行栅格地图的粗糙化
     last_width = next_width;
   }
 }

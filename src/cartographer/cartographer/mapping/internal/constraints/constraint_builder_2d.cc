@@ -310,14 +310,15 @@ void ConstraintBuilder2D::ComputeConstraint(
 
   //add by zhanglei
   //constant_data->scan_matcher_histgram_2d = com
-  ::google::protobuf::int32 rotational_histogram_size_ = 17;  //应该在lua文件中读取的
+  ::google::protobuf::int32 rotational_histogram_size_ = 16;  //应该在lua文件中读取的
   auto histogram_size = rotational_histogram_size_;
   Eigen::VectorXf histogram = Eigen::VectorXf::Zero(histogram_size);  //初始化histogram ，全部设置为0
-  auto& pointcloud  = constant_data->filtered_gravity_aligned_point_cloud;
+  auto& pointcloud  = constant_data->filtered_gravity_aligned_point_cloud; //将constant data中的数据提取出来，重新命名为point cloud
   //auto pointcloud =  SortSlice(constant_data->filtered_gravity_aligned_point_cloud);
   //cartographer::mapping::scan_matching::AddPointCloudSliceToHistogram(sensor::PointCloud::SortSlice(constant_data->filtered_gravity_aligned_point_cloud), &histogram);
 
   //
+  //为后续的点云排序做准备，主要是复用了 < 用于作比较
   struct SortableAnglePointPair{
       bool operator<(const SortableAnglePointPair & rhs)
       const{
@@ -328,13 +329,14 @@ void ConstraintBuilder2D::ComputeConstraint(
       sensor::RangefinderPoint point;
   };
 
+  //对点云求平均
   Eigen::Vector3f sum = Eigen::Vector3f::Zero();
         for ( const auto & point:pointcloud) {
             sum += point.position;
         }
-
-
   const Eigen::Vector3f center = sum/static_cast<float>(pointcloud.size());
+
+  //按照角度机进行排序
   std::vector<SortableAnglePointPair> by_angle;
   by_angle.reserve(pointcloud.size());
   for(const auto& point:pointcloud){
@@ -348,7 +350,7 @@ void ConstraintBuilder2D::ComputeConstraint(
   }
 
   std::sort(by_angle.begin(),by_angle.end());
-  sensor::PointCloud pointcloud_sorted;
+  sensor::PointCloud pointcloud_sorted;    //这是排序以后的点云
   for(const auto & pair : by_angle){
       pointcloud_sorted.push_back(pair.point);
   }
@@ -390,8 +392,14 @@ void ConstraintBuilder2D::ComputeConstraint(
     histogram(bucket) += value;
   }
 
+  //show computed histogram
+  std::cout<<"Histogram 2D :"<<std::endl;
+  std::cout<<histogram<<std::endl;   //输出计算得到的直方图
 
 
+
+
+  //
 
   if (match_full_submap) {    //
     // 节点与全地图进行匹配

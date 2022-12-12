@@ -224,8 +224,8 @@ Eigen::VectorXf RotationalScanMatcher::ComputeHistogram(
 std::vector<float> RotationalScanMatcher::Match(
     const Eigen::VectorXf& histogram, const float initial_angle,
     const std::vector<float>& angles) const {
-  std::vector<float> result;
-  result.reserve(angles.size());
+    std::vector<float> result;
+    result.reserve(angles.size());
 
   for (const float angle : angles) {
     // 将直方图进行旋转

@@ -66,6 +66,8 @@ class Submap2D : public Submap {
 
   // 转换表, 第[0-32767]位置, 存的是[0.9, 0.1~0.9]的数据
   ValueConversionTables* conversion_tables_;
+  Eigen::VectorXf rotational_scan_matcher_histogram_;
+
 };
 
 // The first active submap will be created on the insertion of the first range
