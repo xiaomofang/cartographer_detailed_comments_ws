@@ -332,6 +332,28 @@ bool FastCorrelativeScanMatcher2D::MatchFullSubmap(
                                    min_score, score, pose_estimate);
 }
 
+    bool FastCorrelativeScanMatcher2D::MatchFullSubmap(
+            const sensor::PointCloud& point_cloud, float min_score, float* score,
+            transform::Rigid2d* pose_estimate,const Eigen::VectorXf& scan_histogram,
+            const Eigen::VectorXf& submap_histogram) const {
+        // Compute a search window around the center of the submap that includes it
+        // fully.
+        // 将搜索窗口设置成 xy范围是1e6米, 角度范围是M_PI
+         SearchParameters search_parameters(
+                1e6 * limits_.resolution(),  // Linear search window, 1e6 cells/direction.
+                M_PI,  // Angular search window, 180 degrees in both directions.
+                point_cloud, limits_.resolution());
+        search_parameters.histogram_pointcloud_ = scan_histogram;
+        search_parameters.histogram_submap_ = submap_histogram;
+        // 计算搜索窗口的中点 把这个中点作为搜索的起点
+        const transform::Rigid2d center = transform::Rigid2d::Translation(
+                limits_.max() - 0.5 * limits_.resolution() *
+                                Eigen::Vector2d(limits_.cell_limits().num_y_cells,
+                                                limits_.cell_limits().num_x_cells));
+        return MatchWithSearchParameters(search_parameters, center, point_cloud,
+                                         min_score, score, pose_estimate);
+    }
+
 // 进行基于分支定界算法的粗匹配
 bool FastCorrelativeScanMatcher2D::MatchWithSearchParameters(
     SearchParameters search_parameters,

@@ -310,7 +310,7 @@ void ConstraintBuilder2D::ComputeConstraint(
 
   //add by zhanglei
   //constant_data->scan_matcher_histgram_2d = com
-  ::google::protobuf::int32 rotational_histogram_size_ = 16;  //应该在lua文件中读取的
+  ::google::protobuf::int32 rotational_histogram_size_ = 17;  //应该在lua文件中读取的
   auto histogram_size = rotational_histogram_size_;
   Eigen::VectorXf histogram = Eigen::VectorXf::Zero(histogram_size);  //初始化histogram ，全部设置为0
   auto& pointcloud  = constant_data->filtered_gravity_aligned_point_cloud; //将constant data中的数据提取出来，重新命名为point cloud
@@ -397,7 +397,8 @@ void ConstraintBuilder2D::ComputeConstraint(
   std::cout<<histogram<<std::endl;   //输出计算得到的直方图
 
 
-
+  auto&  scan_histogram = histogram;
+  auto&  submap_histogram = submap->rotational_scan_matcher_histogram_;
 
   //
 
@@ -407,7 +408,8 @@ void ConstraintBuilder2D::ComputeConstraint(
     if (
             submap_scan_matcher.fast_correlative_scan_matcher->MatchFullSubmap
             (constant_data->filtered_gravity_aligned_point_cloud,
-            options_.global_localization_min_score(), &score, &pose_estimate)
+            options_.global_localization_min_score(), &score, &pose_estimate,
+            scan_histogram,submap_histogram)
             )
     {
       CHECK_GT(score, options_.global_localization_min_score());

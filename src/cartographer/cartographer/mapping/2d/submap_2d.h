@@ -59,14 +59,20 @@ class Submap2D : public Submap {
   // submap must not be finished yet.
   void InsertRangeData(const sensor::RangeData& range_data,
                        const RangeDataInserterInterface* range_data_inserter);
-  void Finish();
+  void InsertRangeData(
+        const sensor::RangeData& range_data,
+        const RangeDataInserterInterface* range_data_inserter,
+        const Eigen::Quaterniond& local_from_gravity_aligned,
+        const Eigen::VectorXf& scan_histogram_in_gravity);
 
+  void Finish();
+  Eigen::VectorXf rotational_scan_matcher_histogram_;
  private:
   std::unique_ptr<Grid2D> grid_; // 地图栅格数据
 
   // 转换表, 第[0-32767]位置, 存的是[0.9, 0.1~0.9]的数据
   ValueConversionTables* conversion_tables_;
-  Eigen::VectorXf rotational_scan_matcher_histogram_;
+
 
 };
 
@@ -95,6 +101,10 @@ class ActiveSubmaps2D {
   // Inserts 'range_data' into the Submap collection.
   std::vector<std::shared_ptr<const Submap2D>> InsertRangeData(
       const sensor::RangeData& range_data);
+  std::vector<std::shared_ptr<const Submap2D>> InsertRangeData(
+            const sensor::RangeData& range_data,
+            const Eigen::Quaterniond& local_from_gravity_aligned,
+            const Eigen::VectorXf& rotational_scan_matcher_histogram_in_gravity);
 
   std::vector<std::shared_ptr<const Submap2D>> submaps() const;
 
@@ -103,6 +113,8 @@ class ActiveSubmaps2D {
   std::unique_ptr<GridInterface> CreateGrid(const Eigen::Vector2f& origin);
   void FinishSubmap();
   void AddSubmap(const Eigen::Vector2f& origin);
+  void AddSubmap(const Eigen::Vector2f& origin,
+                                    const int rotational_scan_matcher_histogram_size);
 
   const proto::SubmapsOptions2D options_;
   std::vector<std::shared_ptr<Submap2D>> submaps_;

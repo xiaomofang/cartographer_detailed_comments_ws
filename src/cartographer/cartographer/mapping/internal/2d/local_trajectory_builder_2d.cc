@@ -22,6 +22,8 @@
 #include "absl/memory/memory.h"
 #include "cartographer/metrics/family_factory.h"
 #include "cartographer/sensor/range_data.h"
+#include "cartographer/mapping/internal/3d/scan_matching/rotational_scan_matcher.h"
+
 
 namespace cartographer {
 namespace mapping {
@@ -393,9 +395,26 @@ LocalTrajectoryBuilder2D::InsertIntoSubmap(
   if (motion_filter_.IsSimilar(time, pose_estimate)) {
     return nullptr;
   }
-  // 将点云数据写入到submap中
+
+
+  //zhanglei add
+  const Eigen::VectorXf rotational_scan_matcher_histogram_in_gravity =
+                scan_matching::RotationalScanMatcher::ComputeHistogram(
+                        filtered_gravity_aligned_point_cloud,
+                        17);
+
+  const Eigen::Quaterniond local_from_gravity_aligned =
+        pose_estimate.rotation() * gravity_alignment.inverse();
+
+        // 将点云数据写入到submap中
   std::vector<std::shared_ptr<const Submap2D>> insertion_submaps =
-      active_submaps_.InsertRangeData(range_data_in_local);
+      active_submaps_.InsertRangeData(range_data_in_local,
+                                      local_from_gravity_aligned,
+                                      rotational_scan_matcher_histogram_in_gravity);
+
+
+//std::vector<std::shared_ptr<const Submap2D>> insertion_submaps =
+//        active_submaps_.InsertRangeData(range_data_in_local);
 
   // 生成InsertionResult格式的数据进行返回
   return absl::make_unique<InsertionResult>(InsertionResult{

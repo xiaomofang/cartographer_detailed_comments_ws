@@ -57,6 +57,9 @@ struct SearchParameters {
   double resolution;
   int num_scans;                            // 旋转后的点云集合的个数
   std::vector<LinearBounds> linear_bounds;  // Per rotated scans.
+
+  Eigen::VectorXf histogram_pointcloud_;
+  Eigen::VectorXf histogram_submap_;
 };
 
 // Generates a collection of rotated scans.

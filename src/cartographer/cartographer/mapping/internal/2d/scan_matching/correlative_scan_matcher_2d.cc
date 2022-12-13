@@ -19,6 +19,7 @@
 #include <cmath>
 
 #include "cartographer/common/math.h"
+#include "cartographer/mapping/internal/3d/scan_matching/rotational_scan_matcher.h"
 
 namespace cartographer {
 namespace mapping {
@@ -142,6 +143,24 @@ void test_ShrinkToFit()
 }
 */
 
+
+// 计算两个直方图的余弦距离 即相似程度
+float MatchHistograms(const Eigen::VectorXf& submap_histogram,
+                      const Eigen::VectorXf& scan_histogram)
+{
+    // We compute the dot product of normalized histograms as a measure of
+    // similarity.
+    // 我们计算归一化直方图的点积作为相似度的度量
+    const float scan_histogram_norm = scan_histogram.norm();
+    const float submap_histogram_norm = submap_histogram.norm();
+    const float normalization = scan_histogram_norm * submap_histogram_norm;
+    if (normalization < 1e-3f) {
+        return 1.f;
+    }
+    // 返回两个直方图的夹角的cos值 a·b = |a|*|b|*cos<a,b>
+    return submap_histogram.dot(scan_histogram) / normalization;
+}
+
 // 生成按照不同角度旋转后的点云集合
 std::vector<sensor::PointCloud> GenerateRotatedScans(
     const sensor::PointCloud& point_cloud,
@@ -157,9 +176,19 @@ std::vector<sensor::PointCloud> GenerateRotatedScans(
        ++scan_index,
            delta_theta += search_parameters.angular_perturbation_step_size) {
     // 将 point_cloud 绕Z轴旋转了delta_theta
+
+    const Eigen::VectorXf scan_histogram =
+            scan_matching::RotationalScanMatcher::RotateHistogram(
+                    search_parameters.histogram_pointcloud_, delta_theta);
+    auto result = MatchHistograms(search_parameters.histogram_submap_, scan_histogram);
+
+    std::cout<<"2D histogram match result: "<<result<<std::endl;
+
     rotated_scans.push_back(sensor::TransformPointCloud(
         point_cloud, transform::Rigid3f::Rotation(Eigen::AngleAxisf(
                          delta_theta, Eigen::Vector3f::UnitZ()))));
+
+
   }
   return rotated_scans;
 }

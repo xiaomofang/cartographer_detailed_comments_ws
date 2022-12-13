@@ -16,6 +16,7 @@
 #include "cartographer/mapping/internal/2d/tsdf_range_data_inserter_2d.h"
 #include "cartographer/mapping/range_data_inserter_interface.h"
 #include "glog/logging.h"
+#include "cartographer/mapping/internal/3d/scan_matching/rotational_scan_matcher.h"
 
 namespace cartographer {
 namespace mapping {
@@ -153,6 +154,29 @@ void Submap2D::InsertRangeData(
   set_num_range_data(num_range_data() + 1);
 }
 
+void Submap2D::InsertRangeData(
+        const sensor::RangeData& range_data,
+        const RangeDataInserterInterface* range_data_inserter,
+        const Eigen::Quaterniond& local_from_gravity_aligned,
+        const Eigen::VectorXf& scan_histogram_in_gravity) {
+    CHECK(grid_);
+    CHECK(!insertion_finished());
+    // 将雷达数据写到栅格地图中
+    range_data_inserter->Insert(range_data, grid_.get());
+    // 插入到地图中的雷达数据的个数加1
+    set_num_range_data(num_range_data() + 1);
+
+    const float yaw_in_submap_from_gravity = transform::GetYaw(
+            local_pose().inverse().rotation() * local_from_gravity_aligned);
+    rotational_scan_matcher_histogram_ +=
+            scan_matching::RotationalScanMatcher::RotateHistogram(
+                    scan_histogram_in_gravity, yaw_in_submap_from_gravity);
+    //zhanglei test
+    std::cout<<"update the histogram of the submap: "<<rotational_scan_matcher_histogram_<<std::endl;
+
+
+}
+
 // 将子图标记为完成状态
 void Submap2D::Finish() {
   CHECK(grid_);
@@ -192,6 +216,27 @@ std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::InsertRangeData(
     submaps_.front()->Finish();
   }
   return submaps();
+}
+
+std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::InsertRangeData(
+        const sensor::RangeData& range_data,
+        const Eigen::Quaterniond& local_from_gravity_aligned,
+        const Eigen::VectorXf& rotational_scan_matcher_histogram_in_gravity) {
+    // 如果第二个子图插入节点的数据等于num_range_data时,就新建个子图
+    // 因为这时第一个子图应该已经处于完成状态了
+    if (submaps_.empty() ||
+        submaps_.back()->num_range_data() == options_.num_range_data()) {
+        AddSubmap(range_data.origin.head<2>());
+    }
+    // 将一帧雷达数据同时写入两个子图中
+    for (auto& submap : submaps_) {
+        submap->InsertRangeData(range_data, range_data_inserter_.get(),local_from_gravity_aligned,rotational_scan_matcher_histogram_in_gravity);
+    }
+    // 第一个子图的节点数量等于2倍的num_range_data时,第二个子图节点数量应该等于num_range_data
+    if (submaps_.front()->num_range_data() == 2 * options_.num_range_data()) {
+        submaps_.front()->Finish();
+    }
+    return submaps();
 }
 
 // 创建地图数据写入器
@@ -266,6 +311,26 @@ void ActiveSubmaps2D::AddSubmap(const Eigen::Vector2f& origin) {
       std::unique_ptr<Grid2D>(
           static_cast<Grid2D*>(CreateGrid(origin).release())),
       &conversion_tables_));
+
+}
+
+void ActiveSubmaps2D::AddSubmap(const Eigen::Vector2f& origin,
+                                const int rotational_scan_matcher_histogram_size) {
+    // 调用AddSubmap时第一个子图一定是完成状态,所以子图数为2时就可以删掉第一个子图了
+    if (submaps_.size() >= 2) {
+        // This will crop the finished Submap before inserting a new Submap to
+        // reduce peak memory usage a bit.
+        CHECK(submaps_.front()->insertion_finished());
+        // 删掉第一个子图的指针
+        submaps_.erase(submaps_.begin());
+    }
+    // 新建一个子图, 并保存指向新子图的智能指针
+    submaps_.push_back(absl::make_unique<Submap2D>(
+            origin,
+            std::unique_ptr<Grid2D>(
+                    static_cast<Grid2D*>(CreateGrid(origin).release())),
+            &conversion_tables_));
+    submaps_.back()->rotational_scan_matcher_histogram_ = Eigen::VectorXf::Zero(rotational_scan_matcher_histogram_size);
 }
 
 }  // namespace mapping
