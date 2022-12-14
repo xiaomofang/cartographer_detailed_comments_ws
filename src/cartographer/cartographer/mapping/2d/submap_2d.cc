@@ -172,7 +172,8 @@ void Submap2D::InsertRangeData(
             scan_matching::RotationalScanMatcher::RotateHistogram(
                     scan_histogram_in_gravity, yaw_in_submap_from_gravity);
     //zhanglei test
-    std::cout<<"update the histogram of the submap: "<<rotational_scan_matcher_histogram_<<std::endl;
+    //std::cout<<"rotated histogram with yaw :"<<yaw_in_submap_from_gravity<<"histogram :"<<scan_histogram_in_gravity<<std::endl;
+    //std::cout<<"update the histogram of the submap: "<<rotational_scan_matcher_histogram_<<std::endl;
 
 
 }
@@ -226,7 +227,7 @@ std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::InsertRangeData(
     // 因为这时第一个子图应该已经处于完成状态了
     if (submaps_.empty() ||
         submaps_.back()->num_range_data() == options_.num_range_data()) {
-        AddSubmap(range_data.origin.head<2>());
+        AddSubmap(range_data.origin.head<2>(),17);
     }
     // 将一帧雷达数据同时写入两个子图中
     for (auto& submap : submaps_) {

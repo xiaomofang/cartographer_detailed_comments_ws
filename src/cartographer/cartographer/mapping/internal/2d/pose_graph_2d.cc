@@ -241,7 +241,7 @@ NodeId PoseGraph2D::AddNode(
   // 获取第一个submap是否是完成状态
   const bool newly_finished_submap =
       insertion_submaps.front()->insertion_finished();
-
+  std::cout<<"submap  in pose_graph : "<<insertion_submaps.back()->rotational_scan_matcher_histogram_<<std::endl;
   // 把计算约束的工作放入workitem中等待执行
   AddWorkItem([=]() LOCKS_EXCLUDED(mutex_) {
     return ComputeConstraintsForNode(node_id, insertion_submaps,
@@ -533,6 +533,7 @@ WorkItem::Result PoseGraph2D::ComputeConstraintsForNode(
   // Step: 当前节点与所有已经完成的子图进行约束的计算---实际上就是回环检测
   for (const auto& submap_id : finished_submap_ids) {
     // 计算旧的submap和新的节点间的约束
+    //std::cout<<"finished_submap_ids size :"<<finished_submap_ids.size()<<std::endl;
     ComputeConstraint(node_id, submap_id);
   }
 
@@ -1099,7 +1100,7 @@ void PoseGraph2D::RunOptimization() {
   // landmark直接参与优化问题
   optimization_problem_->Solve(data_.constraints, GetTrajectoryStates(),
                                data_.landmark_nodes);
-
+  std::cout<<"has optimized !!"<<std::endl;
   absl::MutexLock locker(&mutex_);
 
   // 获取优化后的结果

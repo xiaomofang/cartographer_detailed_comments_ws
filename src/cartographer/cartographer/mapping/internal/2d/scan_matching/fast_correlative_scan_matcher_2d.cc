@@ -345,6 +345,9 @@ bool FastCorrelativeScanMatcher2D::MatchFullSubmap(
                 point_cloud, limits_.resolution());
         search_parameters.histogram_pointcloud_ = scan_histogram;
         search_parameters.histogram_submap_ = submap_histogram;
+
+
+
         // 计算搜索窗口的中点 把这个中点作为搜索的起点
         const transform::Rigid2d center = transform::Rigid2d::Translation(
                 limits_.max() - 0.5 * limits_.resolution() *

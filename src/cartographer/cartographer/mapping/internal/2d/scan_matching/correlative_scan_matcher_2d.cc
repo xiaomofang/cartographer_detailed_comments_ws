@@ -180,8 +180,11 @@ std::vector<sensor::PointCloud> GenerateRotatedScans(
     const Eigen::VectorXf scan_histogram =
             scan_matching::RotationalScanMatcher::RotateHistogram(
                     search_parameters.histogram_pointcloud_, delta_theta);
-    auto result = MatchHistograms(search_parameters.histogram_submap_, scan_histogram);
 
+  //  std::cout<<"Rotated histogram with angle: "<<delta_theta<<" :"<<scan_histogram<<std::endl;
+
+    auto result = MatchHistograms(search_parameters.histogram_submap_, scan_histogram);
+    std::cout<<"submap histogram : /n"<<search_parameters.histogram_submap_<<std::endl;
     std::cout<<"2D histogram match result: "<<result<<std::endl;
 
     rotated_scans.push_back(sensor::TransformPointCloud(

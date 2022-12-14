@@ -399,7 +399,7 @@ void ConstraintBuilder2D::ComputeConstraint(
 
   auto&  scan_histogram = histogram;
   auto&  submap_histogram = submap->rotational_scan_matcher_histogram_;
-
+  std::cout<<"submap histogram :"<<submap->rotational_scan_matcher_histogram_<<"submap id: "<<submap_id<<std::endl;
   //
 
   if (match_full_submap) {    //
