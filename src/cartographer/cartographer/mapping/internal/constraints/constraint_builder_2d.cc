@@ -247,6 +247,10 @@ ConstraintBuilder2D::DispatchScanMatcherConstruction(const SubmapId& submap_id,
   // 保存栅格地图的指针
   submap_scan_matcher.grid = grid;
 
+  //进行Grid2D保存
+  std::cout<<"DispatchScanMatcherConstruction : submap id: "<<submap_id<<std::endl;
+
+
   auto& scan_matcher_options = options_.fast_correlative_scan_matcher_options();
   auto scan_matcher_task = absl::make_unique<common::Task>();
   // 生成一个将初始化匹配器的任务, 初始化时会计算多分辨率地图, 比较耗时

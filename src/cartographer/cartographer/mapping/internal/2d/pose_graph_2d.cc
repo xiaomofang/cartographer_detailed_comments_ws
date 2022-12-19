@@ -37,6 +37,8 @@
 #include "cartographer/sensor/internal/voxel_filter.h"
 #include "cartographer/transform/transform.h"
 #include "glog/logging.h"
+#include "fstream"
+#include "stdio.h"
 
 namespace cartographer {
 namespace mapping {
@@ -241,7 +243,7 @@ NodeId PoseGraph2D::AddNode(
   // 获取第一个submap是否是完成状态
   const bool newly_finished_submap =
       insertion_submaps.front()->insertion_finished();
-  std::cout<<"submap  in pose_graph : "<<insertion_submaps.back()->rotational_scan_matcher_histogram_<<std::endl;
+  //std::cout<<"submap  in pose_graph : "<<insertion_submaps.back()->rotational_scan_matcher_histogram_<<std::endl;
   // 把计算约束的工作放入workitem中等待执行
   AddWorkItem([=]() LOCKS_EXCLUDED(mutex_) {
     return ComputeConstraintsForNode(node_id, insertion_submaps,
@@ -412,6 +414,94 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
         data_.submap_data.at(submap_id).submap.get());
   } // end {}
 
+    std::cout<<"submap id :  "<<submap_id<<std::endl;
+    std::cout<<"submap grid x cells: "<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
+    bool bwrite = false;
+    if(bwrite){
+    std::ofstream write;
+    write.open("/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/grid2ddata/"+std::to_string(submap_id.submap_index)+".txt");
+    //limits 输出
+    write<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
+    write<<submap->grid()->limits().cell_limits().num_y_cells<<std::endl;
+    write<<submap->grid()->limits().resolution()<<std::endl;
+    write<<submap->grid()->limits().max()<<std::endl;
+    //CorrespondenceCost 输出
+    for(size_t xindex=0; xindex<submap->grid()->limits().cell_limits().num_x_cells; xindex++){
+        for(size_t yindex=0;yindex<submap->grid()->limits().cell_limits().num_y_cells; yindex++){
+            auto index = submap->grid()->limits().cell_limits().num_x_cells *yindex + xindex;
+            Eigen::Array2i cell_index;
+            cell_index[0]= xindex;
+            cell_index[1]= yindex;
+            write<<submap->grid()->GetCorrespondenceCost(cell_index)<<" ";
+        }
+        write<<std::endl;
+    }
+
+    write.close();
+    std::cout<<"I have wrote the grid 2d data"<<std::endl;
+    }
+
+    //如果要将数据从txt中读取出来
+    bool bread = true;
+    if(bread){
+
+    FILE *file;
+    file = std::fopen(("/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/grid2ddata/"+std::to_string(submap_id.submap_index)+".txt").data(),"r"); //“r”是只读
+
+    if(file == nullptr){
+        std::cout<<"文件没有成功读取"<<std::endl;
+    }
+    //数据读取
+    int num_x_cells,num_y_cells;
+    std::fscanf(file,"%d",&num_x_cells);
+    std::fscanf(file,"%d",&num_y_cells);
+    double resolution,max_x,max_y;
+    std::fscanf(file,"%lf",&resolution);
+    std::fscanf(file,"%lf",&max_x);
+    std::fscanf(file,"%lf",&max_y);
+
+    Eigen::Vector2d limits_max;
+    limits_max<<(max_x+0.1),(max_y+0.1);
+
+    auto _limits = MapLimits(resolution, limits_max,CellLimits(num_x_cells,num_y_cells));
+
+    std::vector<uint16> _correspondence_cost_cells;
+    for(int i = 0; i<(num_x_cells*num_x_cells);i++)
+    {
+        uint16 cost;
+        std::fscanf(file,"%usd",&cost);
+        _correspondence_cost_cells.push_back(cost);
+    }
+
+    submap->grid()->Grid2DSetparam(_limits,_correspondence_cost_cells);
+    //把测试结果在次写到txt文件中
+    bool betest = true;
+    if(betest){
+    //测试
+        std::ofstream write;
+        write.open("/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/grid2ddata/"+std::to_string(submap_id.submap_index)+"_readtest.txt");
+        //limits 输出
+        write<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
+        write<<submap->grid()->limits().cell_limits().num_y_cells<<std::endl;
+        write<<submap->grid()->limits().resolution()<<std::endl;
+        write<<submap->grid()->limits().max()<<std::endl;
+        //CorrespondenceCost 输出
+        for(size_t xindex=0; xindex<submap->grid()->limits().cell_limits().num_x_cells; xindex++) {
+            for (size_t yindex = 0; yindex < submap->grid()->limits().cell_limits().num_y_cells; yindex++) {
+                auto index = submap->grid()->limits().cell_limits().num_x_cells * yindex + xindex;
+                Eigen::Array2i cell_index;
+                cell_index[0] = xindex;
+                cell_index[1] = yindex;
+                write << submap->grid()->GetCorrespondenceCost(cell_index) << " ";
+            }
+            write << std::endl;
+        }
+        write.close();
+        std::cout<<"I have wrote the grid 2d read test data"<<std::endl;
+}
+    }
+
+  std::cout<<"add_local_constraint"<<std::endl;
   // 建图时只会执行这块, 通过局部搜索进行回环检测
   if (maybe_add_local_constraint) {
     // 计算约束的先验估计值
@@ -422,6 +512,7 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
             .global_pose.inverse() *
         optimization_problem_->node_data().at(node_id).global_pose_2d;
     // 进行局部搜索窗口 的约束计算 (对局部子图进行回环检测)
+    std::cout<<"constraint_builder_.MaybeAddConstraint submap_id : "<<submap_id<<std::endl;
     constraint_builder_.MaybeAddConstraint(
         submap_id, submap, node_id, constant_data, initial_relative_pose);
   } 
@@ -533,7 +624,7 @@ WorkItem::Result PoseGraph2D::ComputeConstraintsForNode(
   // Step: 当前节点与所有已经完成的子图进行约束的计算---实际上就是回环检测
   for (const auto& submap_id : finished_submap_ids) {
     // 计算旧的submap和新的节点间的约束
-    //std::cout<<"finished_submap_ids size :"<<finished_submap_ids.size()<<std::endl;
+    std::cout<<"finished_submap_ids size :"<<finished_submap_ids.size()<<std::endl;
     ComputeConstraint(node_id, submap_id);
   }
 

@@ -56,6 +56,13 @@ class Grid2D : public GridInterface {
         [correspondence_cost_cells()[ToFlatIndex(cell_index)]];
   }
 
+
+
+  void Grid2DSetparam(MapLimits _limits,std::vector<uint16> _correspondence_cost_cells){
+      limits_ = _limits;
+      correspondence_cost_cells_.swap(_correspondence_cost_cells) ;
+  }
+
   virtual GridType GetGridType() const = 0;
 
   // Returns the minimum possible correspondence cost.
