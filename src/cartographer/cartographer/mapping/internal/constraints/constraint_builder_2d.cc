@@ -432,7 +432,7 @@ void ConstraintBuilder2D::ComputeConstraint(
     kConstraintsSearchedMetric->Increment();
     if (submap_scan_matcher.fast_correlative_scan_matcher->Match(
             initial_pose, constant_data->filtered_gravity_aligned_point_cloud,
-            options_.min_score(), &score, &pose_estimate)) {
+            options_.min_score(), &score, &pose_estimate,scan_histogram,submap_histogram)) {
       // We've reported a successful local match.
       CHECK_GT(score, options_.min_score());
       kConstraintsFoundMetric->Increment();

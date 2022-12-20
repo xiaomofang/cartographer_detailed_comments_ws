@@ -299,10 +299,36 @@ bool FastCorrelativeScanMatcher2D::Match(
   const SearchParameters search_parameters(options_.linear_search_window(),
                                            options_.angular_search_window(),
                                            point_cloud, limits_.resolution());
+
+  std::cout<<"I use Match not the Match Full submap"<<std::endl;
+
   return MatchWithSearchParameters(search_parameters, initial_pose_estimate,
                                    point_cloud, min_score, score,
                                    pose_estimate);
 }
+
+bool FastCorrelativeScanMatcher2D::Match(
+        const transform::Rigid2d& initial_pose_estimate,
+        const sensor::PointCloud& point_cloud, const float min_score, float* score,
+        transform::Rigid2d* pose_estimate,const Eigen::VectorXf& scan_histogram,
+        const Eigen::VectorXf& submap_histogram) const {
+    // param: linear_search_window angular_search_window
+
+    SearchParameters search_parameters(options_.linear_search_window(),
+                                             options_.angular_search_window(),
+                                             point_cloud, limits_.resolution());
+
+    search_parameters.histogram_pointcloud_ = scan_histogram;
+    search_parameters.histogram_submap_ = submap_histogram;
+    std::cout<<"trans histogram:"<<submap_histogram<<"  end"<<std::endl;
+
+    std::cout<<"I use Match not the Match Full submap"<<std::endl;
+
+    return MatchWithSearchParameters(search_parameters, initial_pose_estimate,
+                                     point_cloud, min_score, score,
+                                     pose_estimate);
+}
+
 
 /**
  * @brief 进行全局搜索窗口的约束计算(对整体子图进行回环检测)
@@ -345,7 +371,7 @@ bool FastCorrelativeScanMatcher2D::MatchFullSubmap(
                 point_cloud, limits_.resolution());
         search_parameters.histogram_pointcloud_ = scan_histogram;
         search_parameters.histogram_submap_ = submap_histogram;
-
+        std::cout<<"trans histogram:"<<submap_histogram<<"  end"<<std::endl;
 
 
         // 计算搜索窗口的中点 把这个中点作为搜索的起点

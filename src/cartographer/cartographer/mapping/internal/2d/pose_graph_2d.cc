@@ -415,7 +415,7 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
   } // end {}
 
     std::cout<<"submap id :  "<<submap_id<<std::endl;
-    std::cout<<"submap grid x cells: "<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
+    //std::cout<<"submap grid x cells: "<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
     bool bwrite = false;
     if(bwrite){
     std::ofstream write;
@@ -442,7 +442,7 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
     }
 
     //如果要将数据从txt中读取出来
-    bool bread = true;
+    bool bread = false;
     if(bread){
 
     FILE *file;
