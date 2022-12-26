@@ -462,7 +462,7 @@ void ConstraintBuilder2D::ComputeConstraint(
   // pose_estimate 是 节点在 loacl frame 下的坐标
   const transform::Rigid2d constraint_transform =
       ComputeSubmapPose(*submap).inverse() * pose_estimate;
-
+    std::cout<<"ture rotation is "<<pose_estimate.rotation().angle()<<std::endl;
   // Step:5 返回计算后的约束
   constraint->reset(new Constraint{submap_id,
                                    node_id,
