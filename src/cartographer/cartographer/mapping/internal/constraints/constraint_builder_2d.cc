@@ -39,6 +39,8 @@
 #include "cartographer/metrics/histogram.h"
 #include "cartographer/transform/transform.h"
 #include "glog/logging.h"
+#include "fstream"
+#include "stdio.h"
 
 namespace cartographer {
 namespace mapping {
@@ -248,7 +250,7 @@ ConstraintBuilder2D::DispatchScanMatcherConstruction(const SubmapId& submap_id,
   submap_scan_matcher.grid = grid;
 
   //进行Grid2D保存
-  std::cout<<"DispatchScanMatcherConstruction : submap id: "<<submap_id<<std::endl;
+  //std::cout<<"DispatchScanMatcherConstruction : submap id: "<<submap_id<<std::endl;
 
 
   auto& scan_matcher_options = options_.fast_correlative_scan_matcher_options();
@@ -397,23 +399,62 @@ void ConstraintBuilder2D::ComputeConstraint(
   }
 
   //show computed histogram
-  std::cout<<"Histogram 2D :"<<std::endl;
-  std::cout<<histogram<<std::endl;   //输出计算得到的直方图
+  //std::cout<<"Histogram 2D :"<<std::endl;
+  //std::cout<<histogram<<std::endl;   //输出计算得到的直方图
 
 
   auto&  scan_histogram = histogram;
   auto&  submap_histogram = submap->rotational_scan_matcher_histogram_;
-  std::cout<<"submap histogram :"<<submap->rotational_scan_matcher_histogram_<<"submap id: "<<submap_id<<std::endl;
-  //
+  //std::cout<<"submap histogram :"<<submap->rotational_scan_matcher_histogram_<<"submap id: "<<submap_id<<std::endl;
 
-  if (match_full_submap) {    //
+
+  //
+        bool bwrite = false;
+        if(bwrite) {
+            std::ofstream write;
+            write.open("/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/histogram2ddata/" +
+                       std::to_string(submap_id.submap_index) + ".txt");
+            write<<submap->rotational_scan_matcher_histogram_;
+        }
+
+        bool bread = true;
+        Eigen::VectorXf HISTO_tem = Eigen::VectorXf::Zero(17);
+
+        if(bread) {
+
+            FILE *file;
+            file = std::fopen(("/home/zhanglei/Cart/lm/cartographer_detailed_comments_ws/histogram2ddata/" +
+                               std::to_string(submap_id.submap_index) + ".txt").data(), "r"); //“r”是只读
+
+            if (file == nullptr) {
+                std::cout << "文件没有成功读取" << std::endl;
+                return;
+            }else
+            {
+                std::cout<<"文件读取成功 "<<std::endl;
+            }
+            //数据读取
+            float histogram_num;
+
+            for(int i = 0;i<17;i++) {
+                std::fscanf(file, "%f", &histogram_num);
+                //std::cout<<"文件中 直方图数据 ["<<i<<"]"<<histogram_num<<std::endl;
+                //HISTO_tem<<histogram_num;
+                HISTO_tem(i,0)=histogram_num;
+            }
+//                HISTO_tem<<histogram_num;}
+
+            //.swap(&HISTO_tem);
+        }
+
+            if (match_full_submap) {    //
     // 节点与全地图进行匹配
     kGlobalConstraintsSearchedMetric->Increment();
     if (
             submap_scan_matcher.fast_correlative_scan_matcher->MatchFullSubmap
             (constant_data->filtered_gravity_aligned_point_cloud,
             options_.global_localization_min_score(), &score, &pose_estimate,
-            scan_histogram,submap_histogram)
+            scan_histogram,HISTO_tem)
             )
     {
       CHECK_GT(score, options_.global_localization_min_score());
@@ -432,7 +473,8 @@ void ConstraintBuilder2D::ComputeConstraint(
     kConstraintsSearchedMetric->Increment();
     if (submap_scan_matcher.fast_correlative_scan_matcher->Match(
             initial_pose, constant_data->filtered_gravity_aligned_point_cloud,
-            options_.min_score(), &score, &pose_estimate,scan_histogram,submap_histogram)) {
+            options_.min_score(), &score, &pose_estimate,scan_histogram,HISTO_tem)) //这里要更改。若读取文件则用HISTO_tem,否则用submap_histogram
+    {
       // We've reported a successful local match.
       CHECK_GT(score, options_.min_score());
       kConstraintsFoundMetric->Increment();

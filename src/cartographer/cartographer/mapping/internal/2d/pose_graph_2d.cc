@@ -414,7 +414,7 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
         data_.submap_data.at(submap_id).submap.get());
   } // end {}
 
-    std::cout<<"submap id :  "<<submap_id<<std::endl;
+    //std::cout<<"submap id :  "<<submap_id<<std::endl;
     //std::cout<<"submap grid x cells: "<<submap->grid()->limits().cell_limits().num_x_cells<<std::endl;
     bool bwrite = false;
     if(bwrite){
@@ -501,7 +501,7 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
 }
     }
 
-  std::cout<<"add_local_constraint"<<std::endl;
+  //std::cout<<"add_local_constraint"<<std::endl;
   // 建图时只会执行这块, 通过局部搜索进行回环检测
   if (maybe_add_local_constraint) {
     // 计算约束的先验估计值
@@ -624,7 +624,7 @@ WorkItem::Result PoseGraph2D::ComputeConstraintsForNode(
   // Step: 当前节点与所有已经完成的子图进行约束的计算---实际上就是回环检测
   for (const auto& submap_id : finished_submap_ids) {
     // 计算旧的submap和新的节点间的约束
-    std::cout<<"finished_submap_ids size :"<<finished_submap_ids.size()<<std::endl;
+    //std::cout<<"finished_submap_ids size :"<<finished_submap_ids.size()<<std::endl;
     ComputeConstraint(node_id, submap_id);
   }
 

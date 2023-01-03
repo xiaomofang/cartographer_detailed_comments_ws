@@ -434,9 +434,17 @@ bool FastCorrelativeScanMatcher2D::MatchWithSearchParameters(
         {initial_pose_estimate.translation().x() + best_candidate.x,
          initial_pose_estimate.translation().y() + best_candidate.y},
         initial_rotation * Eigen::Rotation2Dd(best_candidate.orientation));
-    return true;
+
+      std::cout<<"匹配成功， 旋转角度为： "<<best_candidate.orientation<<std::endl;
+      std::cout<<"匹配得分为： "<<best_candidate.score;
+      std::cout<<"search param = "<<search_parameters.candidateangles[best_candidate.scan_index];
+      return true;
+
   }
-  return false;
+            std::cout<<"匹配得分为： "<<best_candidate.score;
+            std::cout<<"匹配失败 ："<<std::endl;
+
+            return false;
 }
 
 // 生成最低分辨率层(栅格最粗)上的所有候选解, 并进行打分与排序

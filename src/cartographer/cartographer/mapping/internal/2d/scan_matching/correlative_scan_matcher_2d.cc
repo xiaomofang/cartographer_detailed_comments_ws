@@ -86,6 +86,9 @@ SearchParameters::SearchParameters(const int num_linear_perturbations,
 // 计算每一帧点云 在保证最后一个点能在地图范围内时 的最大移动范围
 void SearchParameters::ShrinkToFit(const std::vector<DiscreteScan2D>& scans,
                                    const CellLimits& cell_limits) {
+  num_scans = scans.size();
+  linear_bounds.resize(num_scans);
+  std::cout<<"I changed it to discreteScan size"<<num_scans<<std::endl;
   CHECK_EQ(scans.size(), num_scans);
   CHECK_EQ(linear_bounds.size(), num_scans);
 
@@ -164,7 +167,7 @@ float MatchHistograms(const Eigen::VectorXf& submap_histogram,
 // 生成按照不同角度旋转后的点云集合
 std::vector<sensor::PointCloud> GenerateRotatedScans(
     const sensor::PointCloud& point_cloud,
-    const SearchParameters& search_parameters) {
+     SearchParameters& search_parameters) {
   std::vector<sensor::PointCloud> rotated_scans;
   // 生成 num_scans 个旋转后的点云
   rotated_scans.reserve(search_parameters.num_scans);
@@ -181,12 +184,15 @@ std::vector<sensor::PointCloud> GenerateRotatedScans(
             scan_matching::RotationalScanMatcher::RotateHistogram(
                     search_parameters.histogram_pointcloud_, delta_theta);
 
-    std::cout<<"Rotated histogram with angle: "<<delta_theta<<std::endl;//" :"<<scan_histogram<<std::endl;
+    //std::cout<<"Rotated histogram with angle: "<<delta_theta<<std::endl;//" :"<<scan_histogram<<std::endl;
 
     auto result = MatchHistograms(search_parameters.histogram_submap_, scan_histogram);
     //std::cout<<"submap histogram : /n"<<search_parameters.histogram_submap_<<std::endl;
-    std::cout<<"2D histogram match result: "<<result<<std::endl;
+    //std::cout<<"2D histogram match result: "<<result<<std::endl;
 
+    if(result < 0.5) continue;
+
+    search_parameters.candidateangles.push_back(delta_theta);
     rotated_scans.push_back(sensor::TransformPointCloud(
         point_cloud, transform::Rigid3f::Rotation(Eigen::AngleAxisf(
                          delta_theta, Eigen::Vector3f::UnitZ()))));

@@ -148,7 +148,7 @@ double RealTimeCorrelativeScanMatcher2D::Match(
           initial_rotation.cast<float>().angle(), Eigen::Vector3f::UnitZ())));
 
   // 根据配置参数初始化 SearchParameters
-  const SearchParameters search_parameters(
+   SearchParameters search_parameters(
       options_.linear_search_window(), options_.angular_search_window(),
       rotated_point_cloud, grid.limits().resolution());
 

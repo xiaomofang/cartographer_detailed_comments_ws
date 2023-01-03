@@ -60,12 +60,13 @@ struct SearchParameters {
 
   Eigen::VectorXf histogram_pointcloud_;
   Eigen::VectorXf histogram_submap_;
+  std::vector<double> candidateangles;
 };
 
 // Generates a collection of rotated scans.
 std::vector<sensor::PointCloud> GenerateRotatedScans(
     const sensor::PointCloud& point_cloud,
-    const SearchParameters& search_parameters);
+     SearchParameters& search_parameters);
 
 // Translates and discretizes the rotated scans into a vector of integer
 // indices.
@@ -83,9 +84,10 @@ struct Candidate2D {
         y_index_offset(init_y_index_offset),
         x(-y_index_offset * search_parameters.resolution),
         y(-x_index_offset * search_parameters.resolution),
-        orientation((scan_index - search_parameters.num_angular_perturbations) *
-                    search_parameters.angular_perturbation_step_size) {}
-
+//        orientation((scan_index - search_parameters.num_angular_perturbations) *
+//        search_parameters.angular_perturbation_step_size) {}
+        orientation(search_parameters.candidateangles[scan_index]){}
+        //orientation(search_parameters.candidateangles[scan_index]){}
   // Index into the rotated scans vector.
   int scan_index = 0;
 
