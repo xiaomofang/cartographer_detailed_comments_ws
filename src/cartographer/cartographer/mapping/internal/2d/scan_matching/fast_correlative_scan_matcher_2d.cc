@@ -320,7 +320,8 @@ bool FastCorrelativeScanMatcher2D::Match(
 
     search_parameters.histogram_pointcloud_ = scan_histogram;
     search_parameters.histogram_submap_ = submap_histogram;
-    std::cout<<"trans histogram:"<<submap_histogram<<"  end"<<std::endl;
+    //std::cout<<"trans submap histogram:"<<submap_histogram<<"  end"<<std::endl;
+    //std::cout<<"trans scan histogram:"<<scan_histogram<<"  end"<<std::endl;
 
     std::cout<<"I use Match not the Match Full submap"<<std::endl;
 
@@ -371,8 +372,10 @@ bool FastCorrelativeScanMatcher2D::MatchFullSubmap(
                 point_cloud, limits_.resolution());
         search_parameters.histogram_pointcloud_ = scan_histogram;
         search_parameters.histogram_submap_ = submap_histogram;
-        std::cout<<"trans histogram:"<<submap_histogram<<"  end"<<std::endl;
+        std::cout<<"trans  submap histogram:"<<submap_histogram<<"  end"<<std::endl;
+        std::cout<<"trans scan histogram:"<<scan_histogram<<"  end"<<std::endl;
 
+        std::cout<<"I use  Match Full submap"<<std::endl;
 
         // 计算搜索窗口的中点 把这个中点作为搜索的起点
         const transform::Rigid2d center = transform::Rigid2d::Translation(

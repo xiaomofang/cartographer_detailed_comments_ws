@@ -190,7 +190,7 @@ std::vector<sensor::PointCloud> GenerateRotatedScans(
     //std::cout<<"submap histogram : /n"<<search_parameters.histogram_submap_<<std::endl;
     //std::cout<<"2D histogram match result: "<<result<<std::endl;
 
-    if(result < 0.5) continue;
+    if(result < 0.1) continue;//这个阈值是用来调整过滤到多少的点云，一般0.4可以滤掉3/4的无用匹配
 
     search_parameters.candidateangles.push_back(delta_theta);
     rotated_scans.push_back(sensor::TransformPointCloud(

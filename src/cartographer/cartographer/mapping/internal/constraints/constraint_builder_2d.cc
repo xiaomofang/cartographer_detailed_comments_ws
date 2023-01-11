@@ -320,6 +320,8 @@ void ConstraintBuilder2D::ComputeConstraint(
   auto histogram_size = rotational_histogram_size_;
   Eigen::VectorXf histogram = Eigen::VectorXf::Zero(histogram_size);  //初始化histogram ，全部设置为0
   auto& pointcloud  = constant_data->filtered_gravity_aligned_point_cloud; //将constant data中的数据提取出来，重新命名为point cloud
+  std::cout<<"目前计算点云所处的时间 : "<<constant_data->time<<std::endl;
+  std::cout<<"点云的大小： "<<constant_data->filtered_gravity_aligned_point_cloud.size()<<std::endl;
   //auto pointcloud =  SortSlice(constant_data->filtered_gravity_aligned_point_cloud);
   //cartographer::mapping::scan_matching::AddPointCloudSliceToHistogram(sensor::PointCloud::SortSlice(constant_data->filtered_gravity_aligned_point_cloud), &histogram);
 
@@ -446,6 +448,7 @@ void ConstraintBuilder2D::ComputeConstraint(
 
             //.swap(&HISTO_tem);
         }
+    std::cout<<"目前正在进行匹配的是 "<<submap_id.submap_index<<std::endl;
 
             if (match_full_submap) {    //
     // 节点与全地图进行匹配
